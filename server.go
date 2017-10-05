@@ -17,7 +17,7 @@ type Phone struct {
 }
 
 func getDB() (*sql.DB) {
-	db, err := sql.Open("sqlite3", "/home/akiel/Desktop/etecsa.db")
+	db, err := sql.Open("sqlite3", "./etecsa.db")
 	if err != nil {
 		panic("failed to connect database")
 	}
