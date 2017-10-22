@@ -17,7 +17,7 @@ type Phone struct {
 }
 
 func getDB() (*sql.DB) {
-	db, err := sql.Open("sqlite3", "./etecsa.db")
+	db, err := sql.Open("sqlite3", "/home/akiel/Desktop/etecsa.db")
 	if err != nil {
 		panic("failed to connect database")
 	}
@@ -25,6 +25,9 @@ func getDB() (*sql.DB) {
 }
 
 func getPhoneFromTable(phonenumber string, db *sql.DB, table string) (Phone, error) {
+	//ToDo: Add support for multiple results
+	//ToDo: Add province field to result
+	//ToDo: Try striping province code from number in order to search
 	rows, err := db.Query("select number, name, address from " + table + " where number = '" + phonenumber + "'")
 	if err != nil {
 		return Phone{}, err
@@ -81,6 +84,8 @@ func handleMain(c echo.Context) error {
 func main() {
 	e := echo.New()
 	e.GET("/phones/:phone", handleSearch)
-	e.GET("/", handleMain)
+	//e.GET("/", handleMain)
+	e.File("/", "site/index.html")
+	e.Static("/assets", "site/assets")
 	e.Logger.Fatal(e.Start(":6060"))
 }
