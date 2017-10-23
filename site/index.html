@@ -1,4 +1,4 @@
-<html>
+<html xmlns:v-on="http://www.w3.org/1999/xhtml">
 
 <head>
     <title></title>
@@ -10,7 +10,10 @@
 <div id="app" class="container">
     <div class="row center-align"><h3>ETECSA</h3></div>
     <div class="row center-align">
-        <input class="input-field waves-effect" v-on:keyup="searchDone = false" v-on:keyup.enter="searchPhone" v-model="phone" type="text"/>
+        <span class="input-field">
+            <input class=" waves-effect" v-on:keyup="searchDone = false" v-on:keyup.enter="searchPhone" v-model="phone"
+                   type="text"/>
+        </span>
         <button class="btn" v-on:click="searchPhone">buscar</button>
     </div>
 
@@ -23,6 +26,7 @@
     <div v-else-if="phone !== '' && searchDone" class="card-panel pink">
         <span class="white-text">No he encontrado datos para ese número</span>
     </div>
+</div>
 </body>
 
 <script src="/assets/js/jquery-1.11.2.min.js"></script>
