@@ -7,7 +7,7 @@ var app = new Vue({
     },
     methods: {
         searchPhone: function () {
-            this.$http.get('http://127.0.0.1:6060/phones/' + this.phone).then(
+            this.$http.get('/phones/' + this.phone).then(
                 function (data) {
                     this.udata = data.data;
                     this.searchDone = true;
