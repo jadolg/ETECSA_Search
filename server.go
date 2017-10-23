@@ -29,7 +29,7 @@ func getDB() (*sql.DB) {
 	return db
 }
 
-func getPhoneFromTable(phonenumber string, db *sql.DB, table string) ([]Phone, error) {
+func getPhonesFromTable(phonenumber string, db *sql.DB, table string) ([]Phone, error) {
 	//ToDo: Try striping province code from number in order to search
 	rows, err := db.Query("select number, province, name, address from " + table + " where number = '" + phonenumber + "'")
 	if err != nil {
@@ -60,12 +60,12 @@ func getPhoneFromTable(phonenumber string, db *sql.DB, table string) ([]Phone, e
 }
 
 func getPhones(phonenumber string, db *sql.DB) ([]Phone, error) {
-	movil, err := getPhoneFromTable(phonenumber, db, "movil")
+	movil, err := getPhonesFromTable(phonenumber, db, "movil")
 	if err == nil && len(movil) > 0 {
 		return movil, nil
 	}
 
-	fix, err2 := getPhoneFromTable(phonenumber, db, "fix")
+	fix, err2 := getPhonesFromTable(phonenumber, db, "fix")
 	if err2 == nil && len(fix) > 0 {
 		return fix, nil
 	}
@@ -87,10 +87,6 @@ func handleSearch(c echo.Context) error {
 	} else {
 		return c.JSONPretty(http.StatusNotFound, PhoneArray{Status: "Phone not found", Phones: []Phone{}}, "    ")
 	}
-}
-
-func handleMain(c echo.Context) error {
-	return c.String(http.StatusOK, "try curl http://"+c.Request().Host+"/phones/58999999\n")
 }
 
 func main() {
