@@ -9,11 +9,15 @@ import (
 	"regexp"
 )
 
+type PhoneArray struct {
+	Phones []Phone `json:"phones" xml:"phones"`
+	Status string  `json:"status" xml:"status"`
+}
+
 type Phone struct {
 	Name    string `json:"name" xml:"name" `
 	Number  string `json:"number" xml:"number"`
 	Address string `json:"address" xml:"address"`
-	Status  string `json:"status" xml:"status"`
 }
 
 func getDB() (*sql.DB) {
@@ -24,56 +28,58 @@ func getDB() (*sql.DB) {
 	return db
 }
 
-func getPhoneFromTable(phonenumber string, db *sql.DB, table string) (Phone, error) {
-	//ToDo: Add support for multiple results
+func getPhoneFromTable(phonenumber string, db *sql.DB, table string) ([]Phone, error) {
 	//ToDo: Add province field to result
 	//ToDo: Try striping province code from number in order to search
 	rows, err := db.Query("select number, name, address from " + table + " where number = '" + phonenumber + "'")
 	if err != nil {
-		return Phone{}, err
+		return []Phone{}, err
 	}
 
-	rows.Next()
-	var Number string
-	var Name string
-	var Address string
-	rows.Scan(&Number, &Name, &Address)
+	phones := make([]Phone, 0)
 
-	if Number == "" {
-		return Phone{}, errors.New("Phone not found on table " + table)
+	for rows.Next() {
+		var Number string
+		var Name string
+		var Address string
+		rows.Scan(&Number, &Name, &Address)
+
+		if Number == "" {
+			return []Phone{}, errors.New("Phone not found on table " + table)
+		}
+		phones = append(phones, Phone{Number: Number, Name: Name, Address: Address})
 	}
 
-	return Phone{Number: Number, Name: Name, Address: Address}, nil
+	return phones, nil
 }
 
-func getPhone(phonenumber string, db *sql.DB) (Phone, error) {
+func getPhones(phonenumber string, db *sql.DB) ([]Phone, error) {
 	movil, err := getPhoneFromTable(phonenumber, db, "movil")
-	if err == nil {
+	if err == nil && len(movil) > 0 {
 		return movil, nil
 	}
 
 	fix, err2 := getPhoneFromTable(phonenumber, db, "fix")
-	if err2 == nil {
+	if err2 == nil && len(fix) > 0 {
 		return fix, nil
 	}
 
-	return Phone{}, errors.New("Phone not found")
+	return []Phone{}, errors.New("Phone not found")
 }
 
 func handleSearch(c echo.Context) error {
 	phonenumber := c.Param("phone")
 
 	match, err := regexp.MatchString("^[0-9]+$", phonenumber)
-	if phonenumber == "" || !match{
-		return c.JSONPretty(http.StatusOK, Phone{Status:"Phone not specified or no valid input", Number:phonenumber}, "    ")
+	if phonenumber == "" || !match {
+		return c.JSONPretty(http.StatusOK, PhoneArray{Status: "Phone not specified or no valid input", Phones: []Phone{}}, "    ")
 	}
 	db := getDB()
-	phone, err := getPhone(phonenumber, db)
+	phones, err := getPhones(phonenumber, db)
 	if err == nil {
-		phone.Status = "OK"
-		return c.JSONPretty(http.StatusOK, phone, "    ")
+		return c.JSONPretty(http.StatusOK, PhoneArray{Status: "OK", Phones: phones}, "    ")
 	} else {
-		return c.JSONPretty(http.StatusNotFound, Phone{Status:"Phone not found"}, "    ")
+		return c.JSONPretty(http.StatusNotFound, PhoneArray{Status: "Phone not found", Phones: []Phone{}}, "    ")
 	}
 }
 
@@ -84,7 +90,6 @@ func handleMain(c echo.Context) error {
 func main() {
 	e := echo.New()
 	e.GET("/phones/:phone", handleSearch)
-	//e.GET("/", handleMain)
 	e.File("/", "site/index.html")
 	e.Static("/assets", "site/assets")
 	e.Logger.Fatal(e.Start(":6060"))

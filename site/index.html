@@ -17,12 +17,13 @@
         <button class="btn" v-on:click="searchPhone">buscar</button>
     </div>
 
-    <div v-if="udata.status === 'OK'" class="card blue-grey darken-1">
-        <div class="card-content white-text">
-            <span class="card-title">Nombre: {{ udata.name }}</span>
-            <p>Dirección: {{ udata.address }}</p>
-        </div>
+    <div v-for="aphone in udata.phones" v-if="udata.status === 'OK'" class="card blue-grey darken-1">
+            <div class="card-content white-text">
+                <span class="card-title">Nombre: {{ aphone.name }}</span>
+                <p>Dirección: {{ aphone.address }}</p>
+            </div>
     </div>
+
     <div v-else-if="phone !== '' && searchDone" class="card-panel pink">
         <span class="white-text">No he encontrado datos para ese número</span>
     </div>
