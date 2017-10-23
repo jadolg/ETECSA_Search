@@ -15,9 +15,10 @@ type PhoneArray struct {
 }
 
 type Phone struct {
-	Name    string `json:"name" xml:"name" `
-	Number  string `json:"number" xml:"number"`
-	Address string `json:"address" xml:"address"`
+	Name     string `json:"name" xml:"name" `
+	Number   string `json:"number" xml:"number"`
+	Province string `json:"province"xml:"province"`
+	Address  string `json:"address" xml:"address"`
 }
 
 func getDB() (*sql.DB) {
@@ -29,9 +30,8 @@ func getDB() (*sql.DB) {
 }
 
 func getPhoneFromTable(phonenumber string, db *sql.DB, table string) ([]Phone, error) {
-	//ToDo: Add province field to result
 	//ToDo: Try striping province code from number in order to search
-	rows, err := db.Query("select number, name, address from " + table + " where number = '" + phonenumber + "'")
+	rows, err := db.Query("select number, province, name, address from " + table + " where number = '" + phonenumber + "'")
 	if err != nil {
 		return []Phone{}, err
 	}
@@ -40,14 +40,20 @@ func getPhoneFromTable(phonenumber string, db *sql.DB, table string) ([]Phone, e
 
 	for rows.Next() {
 		var Number string
+		var Province string
 		var Name string
 		var Address string
-		rows.Scan(&Number, &Name, &Address)
+		rows.Scan(&Number, &Province, &Name, &Address)
 
 		if Number == "" {
 			return []Phone{}, errors.New("Phone not found on table " + table)
 		}
-		phones = append(phones, Phone{Number: Number, Name: Name, Address: Address})
+		if table == "movil" {
+			phones = append(phones, Phone{Number: Number, Province: "53", Name: Name, Address: Address})
+		} else {
+			phones = append(phones, Phone{Number: Number, Province: Province, Name: Name, Address: Address})
+		}
+
 	}
 
 	return phones, nil

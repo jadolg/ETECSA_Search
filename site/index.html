@@ -3,6 +3,7 @@
 <head>
     <title></title>
     <link rel="stylesheet" href="/assets/css/materialize.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 
@@ -14,17 +15,22 @@
             <input class=" waves-effect" v-on:keyup="searchDone = false" v-on:keyup.enter="searchPhone" v-model="phone"
                    type="text"/>
         </span>
-        <button class="btn" v-on:click="searchPhone">buscar</button>
+        <a v-on:click="searchPhone" class="btn-floating btn-large red">
+            <i class="material-icons">search</i>
+        </a>
     </div>
 
-    <div v-for="aphone in udata.phones" v-if="udata.status === 'OK'" class="card blue-grey darken-1">
-            <div class="card-content white-text">
-                <span class="card-title">Nombre: {{ aphone.name }}</span>
-                <p>Dirección: {{ aphone.address }}</p>
-            </div>
+    <div v-if="udata.phones.length > 0" v-for="aphone in udata.phones" class="card blue-grey darken-1">
+        <div class="card-content white-text">
+                <span class="card-title row">
+                    <span class="col s9">Nombre: {{ aphone.name }}</span>
+                    <span class="col s3">(+{{ aphone.province }}) {{ aphone.number }}</span>
+                </span>
+            <p>Dirección: {{ aphone.address }}</p>
+        </div>
     </div>
 
-    <div v-else-if="phone !== '' && searchDone" class="card-panel pink">
+    <div v-if="phone !== '' && searchDone && (udata.phones == undefined || udata.status != 'OK')  " class="card-panel pink">
         <span class="white-text">No he encontrado datos para ese número</span>
     </div>
 </div>
