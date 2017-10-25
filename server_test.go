@@ -25,3 +25,11 @@ func TestServerPhoneFromTableNotFound(t *testing.T) {
 		t.Error(err)
 	}
 }
+
+func TestAppendIfNoError(t *testing.T) {
+	slice := make([]Phone,0)
+	sample := Phone{Number: "54831077", Province: "53", Name: "Jorge", Address: "none"}
+	slice2 := []Phone{sample}
+	appendIfNoError(slice2, nil, &slice)
+	assert.EqualValues(t, sample, slice[0])
+}

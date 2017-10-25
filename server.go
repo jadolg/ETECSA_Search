@@ -59,21 +59,22 @@ func getPhonesFromTable(phonenumber string, db *sql.DB, table string) ([]Phone, 
 	return phones, nil
 }
 
+func appendIfNoError(phones []Phone, err error, result *[]Phone)  {
+	if err == nil && len(phones) > 0 {
+		for _, amovil := range phones{
+			*result = append(*result, amovil)
+		}
+	}
+}
+
 func getPhones(phonenumber string, db *sql.DB) ([]Phone, error) {
 	result := make([]Phone,0)
 	movil, err := getPhonesFromTable(phonenumber, db, "movil")
-	if err == nil && len(movil) > 0 {
-		for _, amovil := range movil{
-			result = append(result, amovil)
-		}
-	}
+	appendIfNoError(movil, err, &result)
 
 	fix, err2 := getPhonesFromTable(phonenumber, db, "fix")
-	if err2 == nil && len(fix) > 0 {
-		for _, afix := range fix{
-			result = append(result, afix)
-		}
-	}
+	appendIfNoError(fix, err2, &result)
+
 	if len(result) == 0 {
 		return []Phone{}, errors.New("Phone not found")
 	} else {
