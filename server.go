@@ -60,17 +60,26 @@ func getPhonesFromTable(phonenumber string, db *sql.DB, table string) ([]Phone, 
 }
 
 func getPhones(phonenumber string, db *sql.DB) ([]Phone, error) {
+	result := make([]Phone,0)
 	movil, err := getPhonesFromTable(phonenumber, db, "movil")
 	if err == nil && len(movil) > 0 {
-		return movil, nil
+		for _, amovil := range movil{
+			result = append(result, amovil)
+		}
 	}
 
 	fix, err2 := getPhonesFromTable(phonenumber, db, "fix")
 	if err2 == nil && len(fix) > 0 {
-		return fix, nil
+		for _, afix := range fix{
+			result = append(result, afix)
+		}
+	}
+	if len(result) == 0 {
+		return []Phone{}, errors.New("Phone not found")
+	} else {
+		return result, nil
 	}
 
-	return []Phone{}, errors.New("Phone not found")
 }
 
 func handleSearch(c echo.Context) error {
