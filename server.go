@@ -2,11 +2,13 @@ package main
 
 import (
 	"database/sql"
-	_"github.com/mattn/go-sqlite3"
-	"github.com/pkg/errors"
 	"github.com/labstack/echo"
+	_ "github.com/mattn/go-sqlite3"
+	"github.com/pkg/errors"
+	"github.com/prometheus/common/log"
 	"net/http"
 	"regexp"
+	"strings"
 )
 
 type PhoneArray struct {
@@ -21,7 +23,9 @@ type Phone struct {
 	Address  string `json:"address" xml:"address"`
 }
 
-func getDB() (*sql.DB) {
+var provinces []string
+
+func getDB() *sql.DB {
 	db, err := sql.Open("sqlite3", "/home/akiel/Desktop/etecsa.db")
 	if err != nil {
 		panic("failed to connect database")
@@ -29,9 +33,15 @@ func getDB() (*sql.DB) {
 	return db
 }
 
-func getPhonesFromTable(phonenumber string, db *sql.DB, table string) ([]Phone, error) {
-	//ToDo: Try striping province code from number in order to search
-	rows, err := db.Query("select number, province, name, address from " + table + " where number = '" + phonenumber + "'")
+func getPhonesFromTable(phonenumber string, code string, db *sql.DB, table string) ([]Phone, error) {
+	var rows *sql.Rows
+	var err error
+	if code == "" {
+		rows, err = db.Query("select number, province, name, address from " + table + " where number = '" + phonenumber + "'")
+	} else {
+		rows, err = db.Query("select number, province, name, address from " + table + " where number = '" + phonenumber + "' and province = '" + code + "'")
+	}
+
 	if err != nil {
 		return []Phone{}, err
 	}
@@ -59,28 +69,62 @@ func getPhonesFromTable(phonenumber string, db *sql.DB, table string) ([]Phone, 
 	return phones, nil
 }
 
-func appendIfNoError(phones []Phone, err error, result *[]Phone)  {
+func appendIfNoError(phones []Phone, err error, result *[]Phone) {
 	if err == nil && len(phones) > 0 {
-		for _, amovil := range phones{
+		for _, amovil := range phones {
 			*result = append(*result, amovil)
 		}
 	}
 }
 
 func getPhones(phonenumber string, db *sql.DB) ([]Phone, error) {
-	result := make([]Phone,0)
-	movil, err := getPhonesFromTable(phonenumber, db, "movil")
+	result := make([]Phone, 0)
+	movil, err := getPhonesFromTable(phonenumber, "", db, "movil")
 	appendIfNoError(movil, err, &result)
 
-	fix, err2 := getPhonesFromTable(phonenumber, db, "fix")
+	if strings.HasPrefix(phonenumber, "53") {
+		movil, err := getPhonesFromTable(strings.Replace(phonenumber, "53", "", 1), "", db, "movil")
+		appendIfNoError(movil, err, &result)
+	}
+
+	fix, err2 := getPhonesFromTable(phonenumber, "", db, "fix")
 	appendIfNoError(fix, err2, &result)
+
+	for _, code := range provinces {
+		if strings.HasPrefix(phonenumber, code) {
+			fix, err2 := getPhonesFromTable(strings.Replace(phonenumber, code, "", 1), code, db, "fix")
+			appendIfNoError(fix, err2, &result)
+		} else {
+			if strings.HasPrefix(phonenumber, "0"+code) {
+				fix, err2 := getPhonesFromTable(strings.Replace(phonenumber, "0"+code, "", 1), code, db, "fix")
+				appendIfNoError(fix, err2, &result)
+			}
+		}
+	}
 
 	if len(result) == 0 {
 		return []Phone{}, errors.New("Phone not found")
 	} else {
 		return result, nil
 	}
+}
 
+func getProvinces(db *sql.DB) []string {
+	log.Info("Loading provinces data")
+	rows, err := db.Query("select distinct province from fix")
+	if err != nil {
+		panic(err)
+	}
+
+	provinces := make([]string, 0)
+
+	for rows.Next() {
+		var province string
+		rows.Scan(&province)
+		provinces = append(provinces, province)
+	}
+	log.Info("Done loading provinces data")
+	return provinces
 }
 
 func handleSearch(c echo.Context) error {
@@ -100,6 +144,7 @@ func handleSearch(c echo.Context) error {
 }
 
 func main() {
+	provinces = getProvinces(getDB())
 	e := echo.New()
 	e.GET("/phones/:phone", handleSearch)
 	e.File("/", "site/index.html")
