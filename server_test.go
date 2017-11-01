@@ -6,7 +6,7 @@ import (
 )
 
 func TestServerPhoneFromTable(t *testing.T) {
-	db := getDB()
+	db := getDB("/home/akiel/Desktop/etecsa.db")
 	movil, err := getPhonesFromTable("54831077", "", db, "movil")
 	if err == nil {
 		assert.EqualValues(t, 1, len(movil), "found more or less than 1 result for unique phone")
@@ -17,7 +17,7 @@ func TestServerPhoneFromTable(t *testing.T) {
 }
 
 func TestServerPhoneFromTableNotFound(t *testing.T) {
-	db := getDB()
+	db := getDB("/home/akiel/Desktop/etecsa.db")
 	movil, err := getPhonesFromTable("000000", "", db, "movil")
 	if err == nil {
 		assert.EqualValues(t, 0, len(movil), "invalid amount of data returned for inexistent number")

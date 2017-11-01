@@ -2,11 +2,13 @@ package main
 
 import (
 	"database/sql"
+	"flag"
 	"github.com/labstack/echo"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
 	"github.com/prometheus/common/log"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 )
@@ -24,9 +26,10 @@ type Phone struct {
 }
 
 var provinces []string
+var dbPath *string
 
-func getDB() *sql.DB {
-	db, err := sql.Open("sqlite3", "/home/akiel/Desktop/etecsa.db")
+func getDB(path string) *sql.DB {
+	db, err := sql.Open("sqlite3", path)
 	if err != nil {
 		panic("failed to connect database")
 	}
@@ -111,7 +114,7 @@ func getPhones(phonenumber string, db *sql.DB) ([]Phone, error) {
 
 func getProvinces(db *sql.DB) []string {
 	log.Info("Loading provinces data")
-	rows, err := db.Query("select distinct province from fix")
+	rows, err := db.Query("SELECT DISTINCT province FROM fix")
 	if err != nil {
 		panic(err)
 	}
@@ -134,7 +137,7 @@ func handleSearch(c echo.Context) error {
 	if phonenumber == "" || !match {
 		return c.JSONPretty(http.StatusOK, PhoneArray{Status: "Phone not specified or no valid input", Phones: []Phone{}}, "    ")
 	}
-	db := getDB()
+	db := getDB(*dbPath)
 	phones, err := getPhones(phonenumber, db)
 	if err == nil {
 		return c.JSONPretty(http.StatusOK, PhoneArray{Status: "OK", Phones: phones}, "    ")
@@ -143,11 +146,33 @@ func handleSearch(c echo.Context) error {
 	}
 }
 
+// exists returns whether the given file or directory exists or not
+func exists(path string) bool {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true
+	}
+	if os.IsNotExist(err) {
+		return false
+	}
+	return false
+}
+
 func main() {
-	provinces = getProvinces(getDB())
+	dbPath = flag.String("db", "etecsa.db", "ETECSA's database path")
+	port := flag.String("port", "6060", "port to be used by the service")
+
+	flag.Parse()
+
+	if !exists(*dbPath) {
+		log.Error("Specified database does not exist")
+		os.Exit(1)
+	}
+
+	provinces = getProvinces(getDB(*dbPath))
 	e := echo.New()
 	e.GET("/phones/:phone", handleSearch)
 	e.File("/", "site/index.html")
 	e.Static("/assets", "site/assets")
-	e.Logger.Fatal(e.Start(":6060"))
+	e.Logger.Fatal(e.Start(":" + *port))
 }
